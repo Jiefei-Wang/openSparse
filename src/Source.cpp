@@ -92,11 +92,11 @@ void colSum(double* colResult, void** address) {
 
 int main(void) {
 	
-	/*
+	
 	kernelManager::getAllDeviceName();
 	kernelManager::getPlatformsInfo();
-	kernelManager::showDeviceInfo();*/
-	kernelManager::setKernelDirectory("C:/Users/Jeff/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
+	//kernelManager::showDeviceInfo();
+	/*kernelManager::setKernelDirectory("C:/Users/Jeff/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
 #include "read_test_data"
 	void** address = new void*;
 	double offset = 0;
@@ -120,7 +120,7 @@ int main(void) {
 	rowSum(rowres, address);
 	rowSum(colres, address);
 	print_partial_matrix("rowSum: ", rowsum, 1, 10);
-	print_partial_matrix("rowSum: ", rowres, 1, 10);
+	print_partial_matrix("rowSum: ", rowres, 1, 10);*/
 	//std::cout<< afcl::get
 	//kernelManager::getDeviceFullInfo(0);
 }

@@ -30,7 +30,7 @@ hub=ExperimentHub::ExperimentHub()
 fl=hub[["EH1039"]]
 mydata=openSparse(fl)
 tic()
-res=colSums(mydata)
+res=rowSums(mydata)
 toc()
 mydata1=TENxMatrix(fl, group="mm10")
 tic()
