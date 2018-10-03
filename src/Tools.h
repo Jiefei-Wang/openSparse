@@ -4,7 +4,7 @@
 #else
 #include <CL/cl.h>
 #endif
-
+#include <iostream>
 template<class T1, class T2>
 void cpyData(T1* target, T2* src, size_t n) {
 	for (size_t i = 0; i < n; i++) {

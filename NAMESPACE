@@ -1,4 +1,3 @@
-import(BiocGenerics, rowSums, colSums)
+import(BiocGenerics)
 import(Matrix)
 exportPattern("^[[:alpha:]]+")
-export(".openSparse_opts")

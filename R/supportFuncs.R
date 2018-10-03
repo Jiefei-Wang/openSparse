@@ -1,6 +1,4 @@
-library("Matrix")
-lib_file="src/test_openCL.dll"
-dyn.load(lib_file)
+
 sparseData<-function(row=10,col=10,nonzero=5){
   library("Matrix")
   mydata=matrix(0,row,col)

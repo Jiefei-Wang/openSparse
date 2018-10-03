@@ -1,39 +1,33 @@
 
-R_INC = "$(R_HOME)/include"
-RCPP_INC = "${R_LIBS_USER}/Rcpp/include"
 
-NVCC = "${CUDA_PATH}/bin/nvcc"
-ARRAYFIRE_INC = "${AF_PATH}/include"
-CUDA_LIB = "${CUDA_PATH}/lib64"
 
-#VS_SUPPORT= "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.11.25503\bin\HostX86\x64"
+#AF_PATH1=$(${AF_PATH}:\=/)
+#CUDA_LIB1=$(${CUDA_PATH}:\=/)
+
+AF_INC = "${AF_PATH}/include"
+AF_LIB = "${AF_PATH}/lib"
+CUDA_INC="${CUDA_PATH}/include"
+CUDA_LIB = "${CUDA_PATH}/lib/x64"
+R_INC="${R_HOME}/include"
 
 
 # This defines what the shared object libraries will be
-PKG_LIBS= -L${CUDA_LIB} -lcudart_static -lcusparse
-
-NVCC_FLAGS = -Xcompiler "-fPIC"
+PKG_LIBS= -L${CUDA_LIB} -lOpenCL -L${AF_LIB} -lafopencl
+PKG_INC=-I ${AF_INC} -I ${CUDA_INC} -I ${R_INC}
 
 ### Define objects
-cu_sources=$(wildcard *.cu)
-cu_sharedlibs=$(cu_sources:.cu=.obj)
-
-
 
 cpp_sources := $(wildcard *.cpp)
 cpp_sharedlibs := $(cpp_sources:.cpp=.o)
 
-OBJECTS = $(cu_sharedlibs) $(cpp_sharedlibs)
+OBJECTS =  $(cpp_sharedlibs)
 
-$(warning $(cu_sources))
+$(warning $(OBJECTS))
 
-all: rcppcuda.so
+all: kernel.so
 
-rcppcuda.so: ${OBJECTS}
-	$(NVCC) ${PKG_LIBS} -o kernel.dll --shared $(cu_sharedlibs)
+kernel.so: ${OBJECTS}
+	$(CXX) ${PKG_LIBS} -o kernel.so --shared
 
 %.o: %.cpp $(cpp_sources)
-			$(CXX) $< -c -fPIC -I$(R_INC) -I$(RCPP_INC) -I$(RCPP_INC_EXT)   -I.
-
-%.obj: %.cu $(cu_sources)
-			$(NVCC)  -I$(CUDA_INC) -I$(R_INC)   $< -c  -I.
+			$(CXX) -std=gnu++11 $< -c -fPIC $(PKG_INC)
