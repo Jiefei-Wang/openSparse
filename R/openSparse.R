@@ -3,11 +3,16 @@ library(BiocGenerics)
 .parms<-local({
   e=new.env()
   e$chunkSize=50000000
-  e$dll="kernel.so"
+  e$dll="src/openSparse.dll"
+  e$so="src/openSparse.so"
   list(
     getChunkSize=function(){e$chunkSize},
     setChunkSize=function(size){e$chunkSize=size},
-    getLib=function(){e$dll}
+    getLib=function(){
+      switch(Sys.info()[['sysname']],
+             Windows= {e$dll},
+             Linux  = {e$so},
+             Darwin = {print("Mac is not supported")})}
   )
 })
 

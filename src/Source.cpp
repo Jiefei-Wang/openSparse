@@ -9,13 +9,11 @@
 #endif
 #include"Tools.h"
 #include "kernelManager.h"
-#include "arrayfire.h"
-#include <af/opencl.h>
-#include "sparseMatrix.h"
 
+#include "sparseMatrix.h"
+#include "openArray.h"
 
 //using namespace std;
-using namespace af;
 
 
 
@@ -42,65 +40,74 @@ extern "C" LibExport
 void rowSum(double* rowResult,void** address) {
 	sparseMatrix<double>* data = *(sparseMatrix<double>**)address;
 	size_t length = data->rowNum;
-	array result = constant(0, length, dtype::f32);
-	data->lock();
-	result.lock();
+	openArray* result = openArray::constant(0, length, dtype::f32);
+
 	cl_kernel kernel = kernelManager::createKernel("rowSum");
-	static cl_command_queue af_queue = afcl::getQueue();
+	static cl_command_queue af_queue = kernelManager::getQueue();
 	// Set arguments and launch your kernels
 	cl_int error = 0;
 	error=clSetKernelArg(kernel, 0, sizeof(cl_mem), data->getDevData());
 	error+=clSetKernelArg(kernel, 1, sizeof(cl_mem), data->getDevRow());
 	error += clSetKernelArg(kernel, 2, sizeof(cl_mem), data->getDevCol());
-	error += clSetKernelArg(kernel, 3, sizeof(cl_mem), result.device<cl_mem>());
+	error += clSetKernelArg(kernel, 3, sizeof(cl_mem), result->getDeviceData());
 	//	 data->getLength(1);
 	size_t workNum = data->getLength(2) - 1;
 	size_t localNum = 1;
 	clEnqueueNDRangeKernel(af_queue, kernel, 1, NULL, &workNum, &localNum, 0, NULL, NULL);
-
-	data->unlock();
-	result.unlock();
-	cpyData(rowResult, result.host<float>(), length);
-
+	cpyData(rowResult, (float*)result->getHostData(), length);
+	
 	//af_print(result);
 }
 extern "C" LibExport
 void colSum(double* colResult, void** address) {
 	sparseMatrix<double>* data = *(sparseMatrix<double>**)address;
 	size_t length = data->colNum;
-	array result= constant(0,length, dtype::f32);
-	data->lock();
-	result.lock();
+	openArray* result= openArray::constant(0,length, dtype::f32);
 	cl_kernel kernel = kernelManager::createKernel("colSum");
-	static cl_command_queue af_queue = afcl::getQueue();
+	static cl_command_queue af_queue = kernelManager::getQueue();
 	// Set arguments and launch your kernels
 	cl_int error = 0;
 	error = clSetKernelArg(kernel, 0, sizeof(cl_mem), data->getDevData());
 	error += clSetKernelArg(kernel, 1, sizeof(cl_mem), data->getDevRow());
 	error += clSetKernelArg(kernel, 2, sizeof(cl_mem), data->getDevCol());
-	error += clSetKernelArg(kernel, 3, sizeof(cl_mem), result.device<cl_mem>());
+	error += clSetKernelArg(kernel, 3, sizeof(cl_mem), result->getDeviceData());
 	//	 data->getLength(1);
 	size_t workNum = data->getLength(2) - 1;
 	size_t localNum = 1;
 	clEnqueueNDRangeKernel(af_queue, kernel, 1, NULL, &workNum, &localNum, 0, NULL, NULL);
 
-	data->unlock();
-	result.unlock();
-	cpyData(colResult, result.host<float>(), length);
+	cpyData(colResult, (float*)result->getHostData(), length);
+	delete result;
 	//af_print(result);
 }
 
+void test1();
+void test2();
 int main(void) {
+	test2();
 	
-	
-	kernelManager::getAllDeviceName();
-	kernelManager::getPlatformsInfo();
+	//kernelManager::getAllDeviceName();
+	//kernelManager::getPlatformsInfo();
 	//kernelManager::showDeviceInfo();
-	/*kernelManager::setKernelDirectory("C:/Users/Jeff/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
+	
+	//std::cout<< afcl::get
+	//kernelManager::getDeviceFullInfo(0);
+}
+
+void test1() {
+#include "read_test_data"
+	openArray oa(size[0], data, dtype::autoDetect);
+	print_partial_matrix("data:", (double*)oa.getHostData(), oa.dims(1), oa.dims(0));
+
+
+}
+
+void test2() {
+	kernelManager::setKernelDirectory("C:/Users/Jeff/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
 #include "read_test_data"
 	void** address = new void*;
 	double offset = 0;
-	upload(data, rowInd, colInd, size,&offset, address);
+	upload(data, rowInd, colInd, size, &offset, address);
 	double* download_data = new double[(int)size[0]];
 	int* download_rowInd = new int[(int)size[0]];
 	double* download_colInd = new double[(int)size[0]];
@@ -110,7 +117,7 @@ int main(void) {
 	print_partial_matrix("col: ", download_colInd, 1, size[2]);
 
 	double* colres = new double[10];
-	colSum(colres,address);
+	colSum(colres, address);
 	colSum(colres, address);
 	print_partial_matrix("colSum: ", colsum, 1, 10);
 	print_partial_matrix("colSum: ", colres, 1, 10);
@@ -120,27 +127,5 @@ int main(void) {
 	rowSum(rowres, address);
 	rowSum(colres, address);
 	print_partial_matrix("rowSum: ", rowsum, 1, 10);
-	print_partial_matrix("rowSum: ", rowres, 1, 10);*/
-	//std::cout<< afcl::get
-	//kernelManager::getDeviceFullInfo(0);
+	print_partial_matrix("rowSum: ", rowres, 1, 10);
 }
-
-
-
-/*
-	
-	error = clFlush(command_queue);
-	error = clFinish(command_queue);
-	error = clReleaseKernel(kernel);
-	error = clReleaseProgram(program);
-	error = clReleaseMemObject(a_mem_obj);
-	error = clReleaseMemObject(b_mem_obj);
-	error = clReleaseMemObject(c_mem_obj);
-	error = clReleaseCommandQueue(command_queue);
-	error = clReleaseContext(context);
-	free(A);
-	free(B);
-	free(C);
-	
-}
-*/

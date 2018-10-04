@@ -17,7 +17,6 @@ public:
 	static cl_command_queue command_queue;
 	static std::map<std::string, cl_program> programTable;
 	static std::map<std::string, cl_kernel> kernelTable;
-	static bool ready;
 	static char* kernelFile;
 public:
 	//Get the platform info
@@ -25,14 +24,21 @@ public:
 	//Print out all device name
 	static void getAllDeviceName();
 	//Print out the current device compatibility
-	static void showDeviceInfo();
+	static void getDeviceInfo();
 	static void getDeviceFullInfo(int device);
+	static const char* getErrorString(cl_int error);
 
+	//kernel setting functions
 	static void setKernelDirectory(char*);
 	static void setDevice(int device);
+	static void destroyContext();
 	static cl_kernel createKernel(const char* filename, const char* kernel);
 	static cl_kernel createKernel(const char* kernel);
 
+	//Resources access
+	static cl_context getContext();
+	static cl_device_id getDevice();
+	static cl_command_queue getQueue();
 private:
 	static void loadProgram(const char* filename);
 	static void initializeManager();
