@@ -39,21 +39,30 @@ void kernelManager::getAllDeviceName() {
 		delete[] device_id;
 	}
 	delete[] platform_id;
+	if (platform_num == 0) std::cout << "No device is available, do you forget to install the driver?" << std::endl;
 }
 
-void kernelManager::getDeviceInfo()
+void kernelManager::getDeviceInfo(int device_index)
 {
-	char * 	d_name = new char[40 ];
-	char * 	d_platform = new char[40];
-	char * 	d_toolkit = new char[40];
-	char * 	d_compute = new char[40];
+	char buffer[1024];
+	cl_device_id device = getDeviceID(device_index);
+	if (device == NULL) throw("The selected device is not found!");
+	(clGetDeviceInfo(device, CL_DEVICE_VENDOR, sizeof(buffer), buffer, NULL));
+	printf("Platform name: %s\n", buffer);
+	(clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(buffer), buffer, NULL));
+	printf("Device name: %s\n", buffer);
+	(clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, sizeof(buffer), buffer, NULL));
+	printf("Opencl version: %s\n", buffer);
+	cl_ulong global_mem_size;
+	(clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(global_mem_size), &global_mem_size, NULL));
+	printf("Device memory size: %lu MB\n", global_mem_size / 1048576);
 
-	cout << "Device name: " << d_name << endl;
-	cout << "Platform name: " << d_platform << endl;
-	cout << "Toolkit: " << d_toolkit << endl;
-	cout << "Compite capacity: " << d_compute << endl;
 }
 
+void kernelManager::getCurDevice()
+{
+	getDeviceInfo(deviceIndex);
+}
 
 void kernelManager::setKernelDirectory(char *dir)
 {
@@ -70,6 +79,7 @@ void kernelManager::setDevice(int device)
 	if (context == nullptr) throw("Cannot create a context associated with the current device!");
 	command_queue = clCreateCommandQueue(context, device_id, 0, &error);
 	if (command_queue == nullptr) throw("Cannot create a command queue associated with the current device!");
+	deviceIndex = device;
 }
 
 void kernelManager::destroyContext()
@@ -263,6 +273,7 @@ void kernelManager::getDeviceFullInfo(int device_index)
 	(clGetDeviceInfo(device, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(host_unified_memory), &host_unified_memory, NULL));
 	printf("CL_DEVICE_HOST_UNIFIED_MEMORY: %u\n", host_unified_memory);
 }
+
 
 const char *kernelManager::getErrorString(cl_int error)
 {

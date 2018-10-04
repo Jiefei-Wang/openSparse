@@ -81,17 +81,39 @@ void colSum(double* colResult, void** address) {
 	//af_print(result);
 }
 
+extern "C" LibExport
+void getDeviceList() {
+	kernelManager::getAllDeviceName();
+}
+extern "C" LibExport
+void getDeviceInfo(int * i) {
+	kernelManager::getDeviceInfo( *i);
+}
+extern "C" LibExport
+void getDeviceDetail(int * i) {
+	kernelManager::getDeviceFullInfo(*i);
+}
+extern "C" LibExport
+void setDevice(int * i) {
+	kernelManager::setDevice(*i);
+}
+
+extern "C" LibExport
+void getCurDevice() {
+	kernelManager::getCurDevice();
+}
+
 void test1();
 void test2();
 int main(void) {
-	test2();
+	//test2();
 	
 	//kernelManager::getAllDeviceName();
 	//kernelManager::getPlatformsInfo();
 	//kernelManager::showDeviceInfo();
 	
 	//std::cout<< afcl::get
-	//kernelManager::getDeviceFullInfo(0);
+	kernelManager::getDeviceInfo(1);
 }
 
 void test1() {

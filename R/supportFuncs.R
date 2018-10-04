@@ -1,28 +1,31 @@
+#library.dynam(.parms$getLibName(),pkgname,.parms$getLibPath())
+#dyn.load(.parms$getLibPath())
 
-
+.parms<-local({
+  e=new.env()
+  e$chunkSize=50000000
+  e$dll="src/openSparse.dll"
+  e$so="src/openSparse.so"
+  list(
+    getChunkSize=function(){e$chunkSize},
+    setChunkSize=function(size){e$chunkSize=size},
+    getLibPath=function(){
+      switch(Sys.info()[['sysname']],
+             Windows= {e$dll},
+             Linux  = {e$so},
+             Darwin = {print("Mac is not supported")})},
+    getLibName=function(){"openSparse"},
+    deleteEnv=function(){rm(list =ls(envir = e),envir=e)}
+  )
+})
 .onLoad<-function(libname, pkgname){
-  .parms<-local({
-    e=new.env()
-    e$chunkSize=50000000
-    e$dll="src/openSparse.dll"
-    e$so="src/openSparse.so"
-    list(
-      getChunkSize=function(){e$chunkSize},
-      setChunkSize=function(size){e$chunkSize=size},
-      getLibPath=function(){
-        switch(Sys.info()[['sysname']],
-               Windows= {e$dll},
-               Linux  = {e$so},
-               Darwin = {print("Mac is not supported")})},
-      getLibName=function(){"openSparse"}
-    )
-  })
 
-  library.dynam(.parms$getLibName(),pkgname,.parms$getLibPath())
 }
 
 .onUnload<-function(libpath){
-  library.dynam.unload(.parms$getLibName(),.parms$getLibPath())
+  library.dynam.unload(.parms$getLibName(),libpath)
+  .parms$deleteEnv()
+  .resourceManager$deleteEnv()
 }
 
 sparseData<-function(row=10,col=10,nonzero=5){

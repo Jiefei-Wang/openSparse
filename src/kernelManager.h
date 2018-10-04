@@ -22,8 +22,9 @@ public:
 	//Print out all device name
 	static void getAllDeviceName();
 	//Print out the current device compatibility
-	static void getDeviceInfo();
+	static void getDeviceInfo(int device_index);
 	static void getDeviceFullInfo(int device);
+	static void getCurDevice();
 	static const char* getErrorString(cl_int error);
 
 	//kernel setting functions

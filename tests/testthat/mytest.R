@@ -1,18 +1,18 @@
 
+#dyn.load(.parms$getLibPath())
+#dyn.unload(.parms$getLibPath())
+#detach("package:openSparse",unload = T)
 
 
 
-dyn.load(.parms$getLib())
 mydata=sparseData()
 
-myclass=openiSpase(mydata$dataframe,mydata$rowind,mydata$colind,mydata$size[4],mydata$size[5])
+myclass=openiSpase(mydata$dataframe,mydata$rowind,mydata$colind,mydata$rowNum,mydata$colNum)
 myclass=upload(myclass)
 sum((colSums(myclass)-colSums(mydata$dataMatrix))^2)
 sum((rowSums(myclass)-rowSums(mydata$dataMatrix))^2)
 myclass=download(myclass)
-dyn.unload(.parms$getLib())
 
-dyn.load(.parms$getLib())
 library(rhdf5)
 library(ExperimentHub)
 library(HDF5Array)
@@ -23,10 +23,19 @@ mydata=openSparse(fl)
 tic()
 res=rowSums(mydata)
 toc()
+setDevice(1)
+getCurDevice()
+.resourceManager$getGPUusage()
+tic()
+res1=rowSums(mydata)
+toc()
+
 mydata1=TENxMatrix(fl, group="mm10")
+
+
+
 tic()
 res1=colSums(mydata1)
 toc()
 
-dyn.unload(.parms$getLib())
 
