@@ -1,19 +1,12 @@
 
-
-
-#AF_PATH1=$(${AF_PATH}:\=/)
-#CUDA_LIB1=$(${CUDA_PATH}:\=/)
-
-AF_INC = "${AF_PATH}/include"
-AF_LIB = "${AF_PATH}/lib"
 CUDA_INC="${CUDA_PATH}/include"
 CUDA_LIB = "${CUDA_PATH}/lib/x64"
 R_INC="${R_HOME}/include"
 
 
 # This defines what the shared object libraries will be
-PKG_LIBS= -L${CUDA_LIB} -lOpenCL -L${AF_LIB} -lafopencl
-PKG_INC=-I ${AF_INC} -I ${CUDA_INC} -I ${R_INC}
+PKG_LIBS=  -L${CUDA_LIB} -lOpenCL
+PKG_INC=-I ${CUDA_INC} -I ${R_INC}
 
 ### Define objects
 
@@ -22,12 +15,17 @@ cpp_sharedlibs := $(cpp_sources:.cpp=.o)
 
 OBJECTS =  $(cpp_sharedlibs)
 
-$(warning $(OBJECTS))
+$(warning $(CXX))
 
-all: kernel.so
+all:cleanFile kernel
 
-kernel.so: ${OBJECTS}
-	$(CXX) ${PKG_LIBS} -o kernel.so --shared
+
+
+kernel: ${OBJECTS}
+	$(CXX) ${OBJECTS} ${PKG_LIBS} -o openSparse.dll  --shared
 
 %.o: %.cpp $(cpp_sources)
-			$(CXX) -std=gnu++11 $< -c -fPIC $(PKG_INC)
+			$(CXX) -fPIC -std=gnu++11  $< -c  $(PKG_INC) -m64
+
+cleanFile:
+			rm -f *.o *.dll

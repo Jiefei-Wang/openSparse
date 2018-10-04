@@ -1,16 +1,5 @@
 library(BiocGenerics)
 
-.parms<-local({
-  e=new.env()
-  e$chunkSize=50000000
-  e$dll="kernel.so"
-  list(
-    getChunkSize=function(){e$chunkSize},
-    setChunkSize=function(size){e$chunkSize=size},
-    getLib=function(){e$dll}
-  )
-})
-
 
 
 .openSparse=setClass("openSparse",

@@ -4,14 +4,13 @@
 #else
 #include <CL/cl.h>
 #endif
-#include "arrayfire.h"
-
+#include "openArray.h"
 template<class T>
 class sparseMatrix {
 
-	af::array* data=nullptr;
-	af::array* rowInd = nullptr;
-	af::array* colInd = nullptr;
+	openArray* data=nullptr;
+	openArray* rowInd = nullptr;
+	openArray* colInd = nullptr;
 	double offset;
 public:
 	int rowNum;
@@ -22,8 +21,6 @@ public:
 	sparseMatrix(T * dataVector, int * rowVector, double * colVector, double* size, double* offset);
 	~sparseMatrix();
 
-	void unlock();
-	void lock();
 	cl_mem* getDevData();
 	cl_mem* getDevRow();
 	cl_mem* getDevCol();
