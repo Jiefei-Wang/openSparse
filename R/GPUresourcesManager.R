@@ -50,7 +50,7 @@
 
 getDeviceList=function(){
   .C("getDeviceList")
-  a=1
+  invisible()
 }
 getDeviceInfo=function(i){
   .C("getDeviceInfo",as.integer(i))

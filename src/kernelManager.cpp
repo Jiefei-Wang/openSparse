@@ -72,13 +72,16 @@ void kernelManager::setKernelDirectory(char *dir)
 void kernelManager::setDevice(int device)
 {
 	cl_int error;
-	destroyContext();
+	//destroyContext();
+
+	programTable.clear();
+	kernelTable.clear();
 	device_id = getDeviceID(device);
 	if (device_id == nullptr) throw("The given device is not found, please check if you have a opencl-enable device available!");
 	context=clCreateContext(NULL, 1, &device_id, NULL, NULL, &error);
-	if (context == nullptr) throw("Cannot create a context associated with the current device!");
+	if (error != CL_SUCCESS) throw("Cannot create a context associated with the current device!");
 	command_queue = clCreateCommandQueue(context, device_id, 0, &error);
-	if (command_queue == nullptr) throw("Cannot create a command queue associated with the current device!");
+	if (error != CL_SUCCESS) throw("Cannot create a command queue associated with the current device!");
 	deviceIndex = device;
 }
 
@@ -89,10 +92,10 @@ void kernelManager::destroyContext()
 	error = clFlush(command_queue);
 	error = clFinish(command_queue);
 	for (std::map<std::string, cl_kernel>::iterator it = kernelTable.begin(); it != kernelTable.end(); ++it) {
-		clReleaseKernel(it->second);
+		error+=clReleaseKernel(it->second);
 	}
 	for (std::map<std::string, cl_program>::iterator it = programTable.begin(); it != programTable.end(); ++it) {
-		clReleaseProgram(it->second);
+		error+=clReleaseProgram(it->second);
 	}
 	programTable.clear();
 	kernelTable.clear();
@@ -100,6 +103,7 @@ void kernelManager::destroyContext()
 	error = clReleaseContext(context);
 	command_queue = nullptr;
 	context = nullptr;
+	device_id = nullptr;
 
 }
 
@@ -128,29 +132,6 @@ cl_kernel kernelManager::createKernel(const char * filename, const char * kernel
 cl_kernel kernelManager::createKernel(const char * kernel)
 {
 	return createKernel(kernelFile, kernel);
-}
-
-
-
-cl_context kernelManager::getContext()
-{
-	if(context==nullptr)
-		initializeManager();
-	return context;
-}
-
-cl_device_id kernelManager::getDevice()
-{
-	if (device_id == nullptr)
-		initializeManager();
-	return device_id;
-}
-
-cl_command_queue kernelManager::getQueue()
-{
-	if (command_queue == nullptr)
-		initializeManager();
-	return command_queue;
 }
 
 void kernelManager::loadProgram(const char* filename)
@@ -190,6 +171,29 @@ void kernelManager::loadProgram(const char* filename)
 		return;
 	}
 	programTable.insert(make_pair(string(filename), program));
+}
+
+
+
+cl_context kernelManager::getContext()
+{
+	if (context == nullptr)
+		initializeManager();
+	return context;
+}
+
+cl_device_id kernelManager::getDevice()
+{
+	if (device_id == nullptr)
+		initializeManager();
+	return device_id;
+}
+
+cl_command_queue kernelManager::getQueue()
+{
+	if (command_queue == nullptr)
+		initializeManager();
+	return command_queue;
 }
 
 
