@@ -34,8 +34,7 @@ void print_partial_matrix(char* title, T *M, int nrows, int ncols, int max_row=-
 }
 
 void errorHandle(std::string errorInfo);
-
-
+void message(std::string msg);
 
 
 

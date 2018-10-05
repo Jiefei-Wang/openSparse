@@ -7,7 +7,7 @@
 
 mydata=sparseData()
 
-myclass=openiSpase(mydata$dataframe,mydata$rowind,mydata$colind,mydata$rowNum,mydata$colNum)
+myclass=openiSparse(mydata$dataframe,mydata$rowind,mydata$colind,mydata$rowNum,mydata$colNum)
 myclass=upload(myclass)
 sum((colSums(myclass)-colSums(mydata$dataMatrix))^2)
 sum((rowSums(myclass)-rowSums(mydata$dataMatrix))^2)
@@ -23,19 +23,10 @@ mydata=openSparse(fl)
 tic()
 res=rowSums(mydata)
 toc()
-setDevice(1)
-getCurDevice()
-.resourceManager$getGPUusage()
-tic()
-res1=rowSums(mydata)
-toc()
 
 mydata1=TENxMatrix(fl, group="mm10")
-
-
-
 tic()
-res1=colSums(mydata1)
+res1=rowSums(mydata1)
 toc()
 
 

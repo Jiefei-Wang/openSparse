@@ -1,5 +1,6 @@
 #include "kernelManager.h"
 #include "Tools.h"
+#include <string> 
 using namespace std;
 int kernelManager::deviceIndex = 0;
 cl_context kernelManager::context = nullptr;
@@ -32,31 +33,34 @@ void kernelManager::getAllDeviceName() {
 			clGetDeviceInfo(device_id[j], CL_DEVICE_NAME, NULL, NULL, &name_size);
 			device_name = new char[name_size];
 			clGetDeviceInfo(device_id[j], CL_DEVICE_NAME, name_size, device_name, NULL);
-			std::cout << "Device " << device_count << ": " << device_name << std::endl;
+			string info = string("Device ") + std::to_string(device_count) + ": " + device_name;
+			message(info);
 			device_count++;
 			delete[] device_name;
 		}
 		delete[] device_id;
 	}
 	delete[] platform_id;
-	if (platform_num == 0) std::cout << "No device is available, do you forget to install the driver?" << std::endl;
+	if (platform_num == 0) message("No device is available, do you forget to install the driver?") ;
 }
 
 void kernelManager::getDeviceInfo(int device_index)
 {
-	char buffer[1024];
+
+	int strlen = 1024;
+	char* buffer = new char[strlen];
 	cl_device_id device = getDeviceID(device_index);
-	if (device_id == nullptr) errorHandle("The given device is not found, please check if you have a opencl-enable device available!");
-	(clGetDeviceInfo(device, CL_DEVICE_VENDOR, sizeof(buffer), buffer, NULL));
+	if (device == nullptr) errorHandle("The given device is not found, please check if you have a opencl-enable device available!");
+	(clGetDeviceInfo(device, CL_DEVICE_VENDOR, strlen, buffer, NULL));
 	printf("Platform name: %s\n", buffer);
-	(clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(buffer), buffer, NULL));
+	(clGetDeviceInfo(device, CL_DEVICE_NAME, strlen, buffer, NULL));
 	printf("Device name: %s\n", buffer);
-	(clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, sizeof(buffer), buffer, NULL));
+	(clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, strlen, buffer, NULL));
 	printf("Opencl version: %s\n", buffer);
 	cl_ulong global_mem_size;
 	(clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(global_mem_size), &global_mem_size, NULL));
 	printf("Device memory size: %lu MB\n", global_mem_size / 1048576);
-
+	delete[] buffer;
 }
 
 void kernelManager::getCurDevice()
@@ -74,7 +78,7 @@ void kernelManager::setDevice(int device)
 	cl_int error;
 	destroyContext();
 	device_id = getDeviceID(device);
-	if (device_id == nullptr) errorHandle("The given device is not found, please check if you have a opencl-enable device available!");
+	if (device_id == nullptr) errorHandle("The given device is not found, please check if you have an opencl-enable device available!");
 	context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &error);
 	if (error != CL_SUCCESS) errorHandle("Cannot create a context associated with the current device!");
 	command_queue = clCreateCommandQueue(context, device_id, 0, &error);
@@ -104,15 +108,25 @@ void kernelManager::destroyContext()
 	if (error != CL_SUCCESS) errorHandle("An error has occured in releasing context");
 }
 
-
-cl_kernel kernelManager::createKernel(const char * filename, const char * kernel)
+cl_kernel kernelManager::createKernel(std::string kernel)
 {
-	if (programTable.find(string(filename)) == programTable.end())
-		loadProgram(filename);
-	if (kernelTable.find(string(kernel)) != kernelTable.end())
-		return kernelTable[string(kernel)];
+	return createKernelWithExtCode(kernelFile, kernel, "");
+}
+
+
+cl_kernel kernelManager::createKernel(string kernel,string code)
+{
+	return createKernelWithExtCode(kernelFile, kernel, code);
+}
+
+cl_kernel kernelManager::createKernelWithExtCode(string filename,string kernel,string code)
+{
+	if (programTable.find(filename + code) == programTable.end())
+		loadProgramWithExtCode(filename, code);
+	if (kernelTable.find(kernel+ code) != kernelTable.end())
+		return kernelTable[kernel + code];
 	cl_int error;
-	cl_kernel dev_kernel = clCreateKernel(programTable[string(filename)], kernel, &error);
+	cl_kernel dev_kernel = clCreateKernel(programTable[filename + code], kernel.c_str(), &error);
 
 	switch (error) {
 	case 0:
@@ -122,20 +136,21 @@ cl_kernel kernelManager::createKernel(const char * filename, const char * kernel
 		errorHandle(errorInfo.c_str());
 	}
 
-	kernelTable.insert(make_pair(string(kernel), dev_kernel));
+	kernelTable.insert(make_pair(kernel+ code, dev_kernel));
 	return dev_kernel;
 }
 
-cl_kernel kernelManager::createKernel(const char * kernel)
+void kernelManager::loadProgram(string filename)
 {
-	return createKernel(kernelFile, kernel);
+	loadProgramWithExtCode(filename,"");
 }
 
-void kernelManager::loadProgram(const char* filename)
+
+void kernelManager::loadProgramWithExtCode(string filename,string code)
 {
 	if (context == nullptr)
 		initializeManager();
-	if (programTable.find(string(filename)) != programTable.end())
+	if (programTable.find(filename+code) != programTable.end())
 		return;
 
 	ifstream in(filename, std::ios_base::binary);
@@ -154,10 +169,19 @@ void kernelManager::loadProgram(const char* filename)
 	in.read(&data[0], length);
 	data[length] = 0;
 
-
+	string src = string(data.begin(), data.end());
+	//Substitude the magic code with the actual code
+	if (code.length() != 0) {
+		string magic = string("MagicCodeHere");
+		size_t start_pos = src.find(magic);
+		if (start_pos == string::npos)
+			errorHandle("Cannot find the give code");
+		src.replace(start_pos, magic.length(), code);
+		src = "#define OP_element_trans\r\n" + src;
+	}
 	// create and build program
 	cl_int error = 0;
-	const char* source = &data[0];
+	const char* source = src.c_str();
 	//printf(source);
 	cl_program program = clCreateProgramWithSource(context, 1, &source, 0, &error);
 	if (error != CL_SUCCESS) {
@@ -166,34 +190,30 @@ void kernelManager::loadProgram(const char* filename)
 		return;
 	}
 	error = clBuildProgram(program, 1, &device_id, 0, 0, 0);
-	if (error != CL_SUCCESS) {
-
-
-		return;
-	}
+	
 	switch (error) {
 	case CL_SUCCESS:
 		break;
 	case CL_BUILD_PROGRAM_FAILURE: {
-		cout << "Fail to build program, build info: " << endl;
-		char buffer[1024];
+		errorHandle("Fail to build program, build info: ");
+
+		int strlen = 1024;
+		char* buffer = new char[strlen];
 		// Get the log
-		clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
+		clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, strlen, buffer, NULL);
 		// Print the log
 		string errorInfo = string("Fail to build program, error info: \n") + string(buffer);
 		errorHandle(errorInfo.c_str());
 		delete[] buffer;
-		break; 
+		break;
 	}
 	default: {
 		string errorInfo = string("Fail to build program, error info: ") + string(getErrorString(error));
 		errorHandle(errorInfo.c_str());
 	}
 	}
-	programTable.insert(make_pair(string(filename), program));
+	programTable.insert(make_pair(filename+code, program));
 }
-
-
 
 cl_context kernelManager::getContext()
 {
@@ -223,6 +243,9 @@ void kernelManager::initializeManager()
 	setDevice(deviceIndex);
 }
 
+
+
+//======================Some lengthy functions==============================
 cl_device_id kernelManager::getDeviceID(int k)
 {
 	cl_uint platform_num;
@@ -252,8 +275,11 @@ cl_device_id kernelManager::getDeviceID(int k)
 
 void kernelManager::getDeviceFullInfo(int device_index)
 {
-	char buffer[1024];
+	int strlen = 1024;
+	char* buffer=new char[strlen];
+
 	cl_device_id device = getDeviceID(device_index);
+	if (device == nullptr)errorHandle("The given device is not found, please check if you have an opencl-enable device available!");
 	cl_device_type type;
 	clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(type), &type, NULL);
 	if (type & CL_DEVICE_TYPE_DEFAULT) printf("CL_DEVICE_TYPE: %s\n", "CL_DEVICE_TYPE_DEFAULT");
@@ -261,11 +287,11 @@ void kernelManager::getDeviceFullInfo(int device_index)
 	if (type & CL_DEVICE_TYPE_GPU) printf("CL_DEVICE_TYPE: %s\n", "CL_DEVICE_TYPE_GPU");
 	if (type & CL_DEVICE_TYPE_ACCELERATOR) printf("CL_DEVICE_TYPE: %s\n", "CL_DEVICE_TYPE_ACCELERATOR");
 	if (type & CL_DEVICE_TYPE_CUSTOM) printf("CL_DEVICE_TYPE: %s\n", "CL_DEVICE_TYPE_CUSTOM");
-	(clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(buffer), buffer, NULL));
+	(clGetDeviceInfo(device, CL_DEVICE_NAME, strlen, buffer, NULL));
 	printf("CL_DEVICE_NAME: %s\n", buffer);
-	(clGetDeviceInfo(device, CL_DEVICE_VENDOR, sizeof(buffer), buffer, NULL));
+	(clGetDeviceInfo(device, CL_DEVICE_VENDOR, strlen, buffer, NULL));
 	printf("CL_DEVICE_VENDOR: %s\n", buffer);
-	(clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, sizeof(buffer), buffer, NULL));
+	(clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, strlen, buffer, NULL));
 	printf("CL_DEVICE_OPENCL_C_VERSION: %s\n", buffer);
 	cl_uint max_compute_units;
 	(clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(max_compute_units), &max_compute_units, NULL));

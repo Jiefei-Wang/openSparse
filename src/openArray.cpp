@@ -1,5 +1,7 @@
 #include "openArray.h"
 #include "kernelManager.h"
+#include <string> 
+using namespace std;
 openArray::openArray(LARGEINDEX size1, dtype type)
 {
 	gpuAlloc(size1, type);
@@ -90,7 +92,10 @@ void openArray::gpuAlloc(LARGEINDEX size, dtype type)
 	cl_int error;
 	data=clCreateBuffer(context, CL_MEM_READ_WRITE, size*typesize(type), nullptr, &error);
 	if (error != CL_SUCCESS) {
-		std::cout << "Fail to allocate " << size*typesize(type) / 1024 / 1024 << "MB memory on device, error info: " << kernelManager::getErrorString(error) << std::endl;
+		string errorInfo =string("Fail to allocate ") +
+			to_string(size*typesize(type) / 1024 / 1024)+
+			"MB memory on device, error info: "+ kernelManager::getErrorString(error);
+		errorHandle(errorInfo);
 	}
 }
 
@@ -100,7 +105,10 @@ void openArray::gpuAlloc(LARGEINDEX size, void * hostData, dtype type)
 	cl_int error;
 	data=clCreateBuffer(context, CL_MEM_READ_WRITE| CL_MEM_COPY_HOST_PTR, size*typesize(type), hostData, &error);
 	if (error != CL_SUCCESS) {
-		std::cout << "Fail to allocate " << size*typesize(type) / 1024 / 1024 << "MB memory on device, error info: " << kernelManager::getErrorString(error) << std::endl;
+		string errorInfo = string("Fail to allocate ") +
+			to_string(size*typesize(type) / 1024 / 1024) + 
+			"MB memory on device, error info: " + kernelManager::getErrorString(error);
+		errorHandle(errorInfo);
 	}
 }
 
@@ -123,31 +131,34 @@ int openArray::typesize(dtype type)
 
 void * openArray::transferData(double data, dtype type)
 {
-	float* tmp1;
-	double* tmp2;
-	int* tmp3;
-	LARGEINDEX* tmp4;
-
 	switch (type)
 	{
-	case f32:
-		tmp1 = (float*)malloc(typesize(type));
-		*tmp1 = data;
-		return tmp1;
+	case f32: 
+	{
+		float* tmp = (float*)malloc(typesize(type));
+		*tmp = data;
+		return tmp; 
+	}
 	case f64:
-		tmp2 = (double*)malloc(typesize(type));
-		*tmp2 = data;
-		return tmp2;
+	{
+		double* tmp = (double*)malloc(typesize(type));
+		*tmp = data;
+		return tmp;
+	}
 	case i32:
-		tmp3 = (int*)malloc(typesize(type));
-		*tmp3 = data;
-		return tmp3;
+	{
+		int* tmp = (int*)malloc(typesize(type));
+		*tmp = data;
+		return tmp;
+	}
 	case i64:
-		tmp4 = (LARGEINDEX*)malloc(typesize(type));
-		*tmp4 = data;
-		return tmp4;
+	{
+		long long* tmp = (long long*)malloc(typesize(type));
+		*tmp = data;
+		return tmp;
+	}
 	default:
-		return nullptr;
+		errorHandle("The given type is not supported");
 	}
 }
 

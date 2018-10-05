@@ -1,6 +1,16 @@
-#library.dynam(.parms$getLibName(),pkgname,.parms$getLibPath())
-#dyn.load(.parms$getLibPath())
+#' @importFrom Matrix Matrix
+#' @importFrom stats rbinom
 
+#' @title  Set the package's parameters
+#'
+#' @description
+#' The function 'getChunkSize' and 'setChunkSize' can be used to get or set the chunk size
+#'
+#' @examples
+#' .parms$getChunkSize()
+#' .parms$setChunkSize()
+#'
+#' @export
 .parms<-local({
   e=new.env()
   e$chunkSize=50000000
@@ -28,8 +38,8 @@
   .resourceManager$deleteEnv()
 }
 
+
 sparseData<-function(row=10,col=10,nonzero=5){
-  library("Matrix")
   mydata=matrix(0,row,col)
   mydata[sample(1:length(mydata),nonzero)]=rbinom(nonzero,10,0.5)+1
   m <- Matrix(mydata,sparse=T)

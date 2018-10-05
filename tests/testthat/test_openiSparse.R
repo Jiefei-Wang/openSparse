@@ -2,7 +2,7 @@
 test_that("Matrix upload and download",{
   k=100
   test.data=sparseData(row=k,col=k,nonzero=k*k/2)
-  myopencl=openiSpase(test.data$dataframe,test.data$rowind,test.data$colind,test.data$rowNum,test.data$colNum)
+  myopencl=openiSparse(test.data$dataframe,test.data$rowind,test.data$colind,test.data$rowNum,test.data$colNum)
   myopencl=upload(myopencl)
   myopencl@data=as.double(rep(0,length(test.data$dataframe)))
   myopencl@rowInd=as.integer(rep(0,length(test.data$dataframe)))
@@ -18,7 +18,7 @@ test_that("Matrix upload and download",{
 test_that("Matrix sum",{
   k=100
   test.data=sparseData(row=k,col=k,nonzero=k*k/2)
-  myopencl=openiSpase(test.data$dataframe,test.data$rowind,test.data$colind,test.data$rowNum,test.data$colNum)
+  myopencl=openiSparse(test.data$dataframe,test.data$rowind,test.data$colind,test.data$rowNum,test.data$colNum)
   myopencl=upload(myopencl)
   col_result=colSums(myopencl)
   row_result=rowSums(myopencl)
@@ -27,4 +27,15 @@ test_that("Matrix sum",{
   delete(myopencl)
 })
 
+test_that("Matrix sum with element operation",{
+  k=100
+  test.data=sparseData(row=k,col=k,nonzero=k*k/2)
+  myopencl=openiSparse(test.data$dataframe,test.data$rowind,test.data$colind,test.data$rowNum,test.data$colNum)
+  myopencl=upload(myopencl)
+  col_result=colSumsOP(myopencl,"m=m+2;m=m*4;")
+  row_result=rowSumsOP(myopencl,"m=m+2;m=m*4;")
+  expect_equal(col_result,base::colSums((test.data$dataMatrix+2)*4))
+  expect_equal(row_result,base::rowSums((test.data$dataMatrix+2)*4))
+  delete(myopencl)
+})
 

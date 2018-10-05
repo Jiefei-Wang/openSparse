@@ -31,15 +31,17 @@ public:
 	static void setKernelDirectory(char*);
 	static void setDevice(int device);
 	static void destroyContext();
-	static cl_kernel createKernel(const char* filename, const char* kernel);
-	static cl_kernel createKernel(const char* kernel);
+	static cl_kernel createKernel(std::string kernel);
+	static cl_kernel createKernel(std::string kernel, std::string code);
+	static cl_kernel createKernelWithExtCode(std::string filename, std::string kernel, std::string code);
 
 	//Resources access
 	static cl_context getContext();
 	static cl_device_id getDevice();
 	static cl_command_queue getQueue();
 private:
-	static void loadProgram(const char* filename);
+	static void loadProgram(std::string filename);
+	static void loadProgramWithExtCode(std::string filename,std::string code);
 	static void initializeManager();
 	static cl_device_id getDeviceID(int k);
 };

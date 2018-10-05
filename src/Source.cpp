@@ -37,19 +37,23 @@ void clear(void** address) {
 
 
 extern "C" LibExport
-void rowSum(double* rowResult,void** address) {
+void rowSum(double* rowResult,void** address,char** extCode) {
 	sparseMatrix<double>* data = *(sparseMatrix<double>**)address;
+	int nrow = data->rowNum;
+	int ncol = data->colNum;
 	size_t length = data->rowNum;
 	openArray* result = openArray::constant(0, length, dtype::f32);
 
-	cl_kernel kernel = kernelManager::createKernel("rowSum");
+	cl_kernel kernel = kernelManager::createKernel("rowSum", *extCode);
 	cl_command_queue af_queue = kernelManager::getQueue();
 	// Set arguments and launch your kernels
 	cl_int error = 0;
 	error=clSetKernelArg(kernel, 0, sizeof(cl_mem), data->getDevData());
 	error+=clSetKernelArg(kernel, 1, sizeof(cl_mem), data->getDevRow());
 	error += clSetKernelArg(kernel, 2, sizeof(cl_mem), data->getDevCol());
-	error += clSetKernelArg(kernel, 3, sizeof(cl_mem), result->getDeviceData());
+	error += clSetKernelArg(kernel, 3, sizeof(int), &nrow);
+	error += clSetKernelArg(kernel, 4, sizeof(int), &ncol);
+	error += clSetKernelArg(kernel, 5, sizeof(cl_mem), result->getDeviceData());
 	//	 data->getLength(1);
 	size_t workNum = data->getLength(2) - 1;
 	size_t localNum = 1;
@@ -61,19 +65,23 @@ void rowSum(double* rowResult,void** address) {
 	//af_print(result);
 }
 extern "C" LibExport
-void colSum(double* colResult, void** address) {
+void colSum(double* colResult, void** address, char** extCode) {
 	sparseMatrix<double>* data = *(sparseMatrix<double>**)address;
+	int nrow = data->rowNum;
+	int ncol = data->colNum;
 	size_t length = data->colNum;
 	openArray* result= openArray::constant(0,length, dtype::f32);
 
-	cl_kernel kernel = kernelManager::createKernel("colSum");
+	cl_kernel kernel = kernelManager::createKernel("colSum", *extCode);
 	cl_command_queue af_queue = kernelManager::getQueue();
 	// Set arguments and launch your kernels
 	cl_int error = 0;
 	error = clSetKernelArg(kernel, 0, sizeof(cl_mem), data->getDevData());
 	error += clSetKernelArg(kernel, 1, sizeof(cl_mem), data->getDevRow());
 	error += clSetKernelArg(kernel, 2, sizeof(cl_mem), data->getDevCol());
-	error += clSetKernelArg(kernel, 3, sizeof(cl_mem), result->getDeviceData());
+	error += clSetKernelArg(kernel, 3, sizeof(int), &nrow);
+	error += clSetKernelArg(kernel, 4, sizeof(int), &ncol);
+	error += clSetKernelArg(kernel, 5, sizeof(cl_mem), result->getDeviceData());
 	//	 data->getLength(1);
 	size_t workNum = data->getLength(2) - 1;
 	size_t localNum = 1;
@@ -112,15 +120,19 @@ void debug() {
 }
 
 void test1();
-void test2();
+void test2(char* );
 void test3();
 void test4();
 int main(void) {
-	kernelManager::setDevice(0);
-	test2();
-	kernelManager::setDevice(0);
+	//kernelManager::setKernelDirectory("C:/Users/Jeff/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
+	kernelManager::setKernelDirectory("C:/Users/wangj/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
+
+	//kernelManager::setDevice(0);
+	test2("m=m+2;");
+	test2("m=m+2;m=m*4;");
+	//kernelManager::setDevice(10);
 	
-	test2();
+	//test2();
 	/*
 	kernelManager::setDevice(0);
 	test3();
@@ -135,10 +147,10 @@ int main(void) {
 	//test2();
 	//kernelManager::getAllDeviceName();
 	//kernelManager::getPlatformsInfo();
-	//kernelManager::showDeviceInfo();
 	
 	//std::cout<< afcl::get
 	//kernelManager::getDeviceInfo(1);
+	//kernelManager::getDeviceFullInfo(1);
 }
 
 void test1() {
@@ -149,9 +161,9 @@ void test1() {
 
 }
 
-void test2() {
-	kernelManager::setKernelDirectory("C:/Users/Jeff/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
-	//kernelManager::setKernelDirectory("C:/Users/wangj/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
+void test2(char* extCode) {
+	char** extCodePtr = &extCode;
+
 #include "read_test_data"
 	void** address = new void*;
 	double offset = 0;
@@ -165,13 +177,13 @@ void test2() {
 	print_partial_matrix("col: ", download_colInd, 1, size[2]);
 
 	double* colres = new double[10];
-	colSum(colres, address);
+	colSum(colres, address, extCodePtr);
 	print_partial_matrix("colSum: ", colsum, 1, 10);
 	print_partial_matrix("colSum: ", colres, 1, 10);
 
 
 	double* rowres = new double[10];
-	rowSum(rowres, address);
+	rowSum(rowres, address, extCodePtr);
 	print_partial_matrix("rowSum: ", rowsum, 1, 10);
 	print_partial_matrix("rowSum: ", rowres, 1, 10);
 	clear(address);

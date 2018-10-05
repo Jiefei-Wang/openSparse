@@ -1,24 +1,13 @@
-
+CXX_STD=CXX11
 CUDA_INC="${CUDA_PATH}/include"
 CUDA_LIB = "${CUDA_PATH}/lib/x64"
-R_INC="${R_HOME}/include"
 
 
 # This defines what the shared object libraries will be
 PKG_LIBS=  -L${CUDA_LIB} -lOpenCL
-PKG_INC=-I ${CUDA_INC} -I ${R_INC}
+PKG_CPPFLAGS =  -I${R_HOME}/include -I${CUDA_INC}
 
 ### Define objects
 OBJECTS = sparseMatrix.o kernelManager.o Source.o openArray.o Tools.o
 
 #$(warning $(CXX))
-
-all:cleanFile kernel
-kernel: ${OBJECTS}
-	$(CXX) ${OBJECTS} ${PKG_LIBS} -o openSparse.dll  --shared
-
-%.o: %.cpp $(cpp_sources)
-			$(CXX) -fPIC -std=gnu++11  $< -c  $(PKG_INC) -m64
-
-cleanFile:
-			rm -f *.o *.dll
