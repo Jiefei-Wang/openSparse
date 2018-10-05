@@ -1,22 +1,6 @@
-AF_PATH = /home/mtmorgan/bin/arrayfire
 
-RCPP_INC = "${R_LIBS_USER}/Rcpp/include"
+CXX_STD = CXX11
+PKG_CPPFLAGS =  -I${R_HOME}/include
+PKG_LIBS= -lOpenCL
 
-# This defines what the shared object libraries will be
-PKG_LIBS= -L${AF_PATH}/lib -lafopencl /usr/lib/x86_64-linux-gnu/libOpenCL.so
-PKG_INCLUDE = -I${AF_PATH}/include -I${R_HOME}/include
-
-### Define objects
-cpp_sources=$(wildcard *.cpp)
-cpp_sharedlibs := $(cpp_sources:.cpp=.o)
-
-OBJECTS = $(cpp_sharedlibs)
-
-all: openSparse.so
-	
-
-openSparse.so: ${OBJECTS}
-	$(CXX) ${OBJECTS} ${PKG_LIBS} -o openSparse.so --shared
-
-%.o: %.cpp $(cpp_sources)
-	$(CXX) -std=gnu++11 $< -c -fPIC ${PKG_INCLUDE}
+OBJECTS = sparseMatrix.o kernelManager.o Source.o openArray.o Tools.o

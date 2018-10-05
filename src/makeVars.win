@@ -9,18 +9,11 @@ PKG_LIBS=  -L${CUDA_LIB} -lOpenCL
 PKG_INC=-I ${CUDA_INC} -I ${R_INC}
 
 ### Define objects
+OBJECTS = sparseMatrix.o kernelManager.o Source.o openArray.o Tools.o
 
-cpp_sources := $(wildcard *.cpp)
-cpp_sharedlibs := $(cpp_sources:.cpp=.o)
-
-OBJECTS =  $(cpp_sharedlibs)
-
-$(warning $(CXX))
+#$(warning $(CXX))
 
 all:cleanFile kernel
-
-
-
 kernel: ${OBJECTS}
 	$(CXX) ${OBJECTS} ${PKG_LIBS} -o openSparse.dll  --shared
 

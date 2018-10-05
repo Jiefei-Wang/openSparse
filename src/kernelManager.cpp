@@ -1,10 +1,10 @@
 #include "kernelManager.h"
-
+#include "Tools.h"
 using namespace std;
-int kernelManager::deviceIndex=0;
-cl_context kernelManager::context=nullptr;
+int kernelManager::deviceIndex = 0;
+cl_context kernelManager::context = nullptr;
 cl_device_id kernelManager::device_id = nullptr;
-cl_command_queue kernelManager::command_queue= nullptr;
+cl_command_queue kernelManager::command_queue = nullptr;
 std::map<std::string, cl_program> kernelManager::programTable;
 std::map<std::string, cl_kernel> kernelManager::kernelTable;
 char* kernelManager::kernelFile = "src/kernel.cl";
@@ -46,7 +46,7 @@ void kernelManager::getDeviceInfo(int device_index)
 {
 	char buffer[1024];
 	cl_device_id device = getDeviceID(device_index);
-	if (device == NULL) throw("The selected device is not found!");
+	if (device_id == nullptr) errorHandle("The given device is not found, please check if you have a opencl-enable device available!");
 	(clGetDeviceInfo(device, CL_DEVICE_VENDOR, sizeof(buffer), buffer, NULL));
 	printf("Platform name: %s\n", buffer);
 	(clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(buffer), buffer, NULL));
@@ -72,16 +72,13 @@ void kernelManager::setKernelDirectory(char *dir)
 void kernelManager::setDevice(int device)
 {
 	cl_int error;
-	//destroyContext();
-
-	programTable.clear();
-	kernelTable.clear();
+	destroyContext();
 	device_id = getDeviceID(device);
-	if (device_id == nullptr) throw("The given device is not found, please check if you have a opencl-enable device available!");
-	context=clCreateContext(NULL, 1, &device_id, NULL, NULL, &error);
-	if (error != CL_SUCCESS) throw("Cannot create a context associated with the current device!");
+	if (device_id == nullptr) errorHandle("The given device is not found, please check if you have a opencl-enable device available!");
+	context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &error);
+	if (error != CL_SUCCESS) errorHandle("Cannot create a context associated with the current device!");
 	command_queue = clCreateCommandQueue(context, device_id, 0, &error);
-	if (error != CL_SUCCESS) throw("Cannot create a command queue associated with the current device!");
+	if (error != CL_SUCCESS) errorHandle("Cannot create a command queue associated with the current device!");
 	deviceIndex = device;
 }
 
@@ -92,19 +89,19 @@ void kernelManager::destroyContext()
 	error = clFlush(command_queue);
 	error = clFinish(command_queue);
 	for (std::map<std::string, cl_kernel>::iterator it = kernelTable.begin(); it != kernelTable.end(); ++it) {
-		error+=clReleaseKernel(it->second);
+		error += clReleaseKernel(it->second);
 	}
 	for (std::map<std::string, cl_program>::iterator it = programTable.begin(); it != programTable.end(); ++it) {
-		error+=clReleaseProgram(it->second);
+		error += clReleaseProgram(it->second);
 	}
 	programTable.clear();
 	kernelTable.clear();
-	error = clReleaseCommandQueue(command_queue);
-	error = clReleaseContext(context);
+	error += clReleaseCommandQueue(command_queue);
+	error += clReleaseContext(context);
 	command_queue = nullptr;
 	context = nullptr;
 	device_id = nullptr;
-
+	if (error != CL_SUCCESS) errorHandle("An error has occured in releasing context");
 }
 
 
@@ -120,9 +117,9 @@ cl_kernel kernelManager::createKernel(const char * filename, const char * kernel
 	switch (error) {
 	case 0:
 		break;
-
 	default:
-		cout << "Fail to create kernel, error info: " << getErrorString(error) << endl;
+		string errorInfo = string("Fail to create kernel, error info: ") + string(getErrorString(error));
+		errorHandle(errorInfo.c_str());
 	}
 
 	kernelTable.insert(make_pair(string(kernel), dev_kernel));
@@ -143,7 +140,8 @@ void kernelManager::loadProgram(const char* filename)
 
 	ifstream in(filename, std::ios_base::binary);
 	if (!in.good()) {
-		return;
+		string errorInfo = string("Fail to find the program file");
+		errorHandle(errorInfo.c_str());
 	}
 
 	// get file length
@@ -160,15 +158,37 @@ void kernelManager::loadProgram(const char* filename)
 	// create and build program
 	cl_int error = 0;
 	const char* source = &data[0];
+	//printf(source);
 	cl_program program = clCreateProgramWithSource(context, 1, &source, 0, &error);
 	if (error != CL_SUCCESS) {
-		cout << "Fail to read program, error info: " << getErrorString(error) << endl;
+		string errorInfo = string("Fail to read program, error info: ") + string(getErrorString(error));
+		errorHandle(errorInfo.c_str());
 		return;
 	}
 	error = clBuildProgram(program, 1, &device_id, 0, 0, 0);
 	if (error != CL_SUCCESS) {
-		cout << "Fail to build program, error info: " << getErrorString(error) << endl;
+
+
 		return;
+	}
+	switch (error) {
+	case CL_SUCCESS:
+		break;
+	case CL_BUILD_PROGRAM_FAILURE: {
+		cout << "Fail to build program, build info: " << endl;
+		char buffer[1024];
+		// Get the log
+		clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, NULL);
+		// Print the log
+		string errorInfo = string("Fail to build program, error info: \n") + string(buffer);
+		errorHandle(errorInfo.c_str());
+		delete[] buffer;
+		break; 
+	}
+	default: {
+		string errorInfo = string("Fail to build program, error info: ") + string(getErrorString(error));
+		errorHandle(errorInfo.c_str());
+	}
 	}
 	programTable.insert(make_pair(string(filename), program));
 }
@@ -276,6 +296,7 @@ void kernelManager::getDeviceFullInfo(int device_index)
 	cl_bool host_unified_memory;
 	(clGetDeviceInfo(device, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(host_unified_memory), &host_unified_memory, NULL));
 	printf("CL_DEVICE_HOST_UNIFIED_MEMORY: %u\n", host_unified_memory);
+	delete[] buffer;
 }
 
 

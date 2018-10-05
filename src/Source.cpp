@@ -43,7 +43,7 @@ void rowSum(double* rowResult,void** address) {
 	openArray* result = openArray::constant(0, length, dtype::f32);
 
 	cl_kernel kernel = kernelManager::createKernel("rowSum");
-	static cl_command_queue af_queue = kernelManager::getQueue();
+	cl_command_queue af_queue = kernelManager::getQueue();
 	// Set arguments and launch your kernels
 	cl_int error = 0;
 	error=clSetKernelArg(kernel, 0, sizeof(cl_mem), data->getDevData());
@@ -53,7 +53,9 @@ void rowSum(double* rowResult,void** address) {
 	//	 data->getLength(1);
 	size_t workNum = data->getLength(2) - 1;
 	size_t localNum = 1;
-	clEnqueueNDRangeKernel(af_queue, kernel, 1, NULL, &workNum, &localNum, 0, NULL, NULL);
+	error += clEnqueueNDRangeKernel(af_queue, kernel, 1, NULL, &workNum, &localNum, 0, NULL, NULL);
+
+	if (error != 0) throw("An error has occured in the kernel excution");
 	cpyData(rowResult, (float*)result->getHostData(), length);
 	
 	//af_print(result);
@@ -63,8 +65,9 @@ void colSum(double* colResult, void** address) {
 	sparseMatrix<double>* data = *(sparseMatrix<double>**)address;
 	size_t length = data->colNum;
 	openArray* result= openArray::constant(0,length, dtype::f32);
+
 	cl_kernel kernel = kernelManager::createKernel("colSum");
-	static cl_command_queue af_queue = kernelManager::getQueue();
+	cl_command_queue af_queue = kernelManager::getQueue();
 	// Set arguments and launch your kernels
 	cl_int error = 0;
 	error = clSetKernelArg(kernel, 0, sizeof(cl_mem), data->getDevData());
@@ -74,11 +77,11 @@ void colSum(double* colResult, void** address) {
 	//	 data->getLength(1);
 	size_t workNum = data->getLength(2) - 1;
 	size_t localNum = 1;
-	error+=clEnqueueNDRangeKernel(af_queue, kernel, 1, NULL, &workNum, &localNum, 0, NULL, NULL);
+	error+= clEnqueueNDRangeKernel(af_queue, kernel, 1, NULL, &workNum, &localNum, 0, NULL, NULL);
 
+	if (error != 0) throw("An error has occured in the kernel excution");
 	cpyData(colResult, (float*)result->getHostData(), length);
 	delete result;
-	//af_print(result);
 }
 
 extern "C" LibExport
@@ -105,36 +108,31 @@ void getCurDevice() {
 
 extern "C" LibExport
 void debug() {
-	std::cout << kernelManager::programTable.size() << std::endl;
-	std::cout << kernelManager::kernelTable.size() << std::endl;
+	throw("test error");
 }
 
 void test1();
 void test2();
+void test3();
+void test4();
 int main(void) {
-	kernelManager::setDevice(1);
+	kernelManager::setDevice(0);
 	test2();
-	kernelManager::setDevice(2);
-	cl_device_id* id = new cl_device_id[1];
-	size_t size = 0;
-	cl_int error = clGetContextInfo(kernelManager::context, CL_CONTEXT_DEVICES, NULL, NULL, &size);
-	 error=clGetContextInfo(kernelManager::context, CL_CONTEXT_DEVICES, size, id,NULL);
-	if (*id != kernelManager::device_id) std::cout << "not match" << std::endl;
-	char buffer[1024];
-	cl_device_id device = *id;
-	if (device == NULL) throw("The selected device is not found!");
-	(clGetDeviceInfo(device, CL_DEVICE_VENDOR, sizeof(buffer), buffer, NULL));
-	printf("Platform name: %s\n", buffer);
-	(clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(buffer), buffer, NULL));
-	printf("Device name: %s\n", buffer);
-	(clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, sizeof(buffer), buffer, NULL));
-	printf("Opencl version: %s\n", buffer);
-	cl_ulong global_mem_size;
-	(clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(global_mem_size), &global_mem_size, NULL));
-	printf("Device memory size: %lu MB\n", global_mem_size / 1048576);
+	kernelManager::setDevice(0);
+	
+	test2();
+	/*
+	kernelManager::setDevice(0);
+	test3();
+	kernelManager::setDevice(0);
+	test3();
 
-	test2();
-	debug();
+	kernelManager::setDevice(0);
+	test3();
+	kernelManager::setDevice(0);
+	test3();*/
+	//kernelManager::setDevice(0);
+	//test2();
 	//kernelManager::getAllDeviceName();
 	//kernelManager::getPlatformsInfo();
 	//kernelManager::showDeviceInfo();
@@ -152,8 +150,8 @@ void test1() {
 }
 
 void test2() {
-	//kernelManager::setKernelDirectory("C:/Users/Jeff/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
-	kernelManager::setKernelDirectory("C:/Users/wangj/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
+	kernelManager::setKernelDirectory("C:/Users/Jeff/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
+	//kernelManager::setKernelDirectory("C:/Users/wangj/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
 #include "read_test_data"
 	void** address = new void*;
 	double offset = 0;
@@ -168,15 +166,63 @@ void test2() {
 
 	double* colres = new double[10];
 	colSum(colres, address);
-	colSum(colres, address);
 	print_partial_matrix("colSum: ", colsum, 1, 10);
 	print_partial_matrix("colSum: ", colres, 1, 10);
 
 
 	double* rowres = new double[10];
 	rowSum(rowres, address);
-	rowSum(colres, address);
 	print_partial_matrix("rowSum: ", rowsum, 1, 10);
 	print_partial_matrix("rowSum: ", rowres, 1, 10);
 	clear(address);
+}
+
+
+void test3() {
+	kernelManager::setKernelDirectory("vector_add_kernel.cl");
+	cl_int error;
+	//Data preparation
+	const int LIST_SIZE = 1024;
+	openArray* A = openArray::constant(1, LIST_SIZE, dtype::i32);
+	openArray* B = openArray::constant(2, LIST_SIZE, dtype::i32);
+	openArray* C = openArray::constant(0, LIST_SIZE, dtype::i32);
+
+	//prepare the kernel function
+	cl_kernel kernel= kernelManager::createKernel("vector_add");
+	cl_command_queue queue = kernelManager::getQueue();
+	//set argument
+	error = clSetKernelArg(kernel, 0, sizeof(cl_mem), A->getDeviceData());
+	error += clSetKernelArg(kernel, 1, sizeof(cl_mem), B->getDeviceData());
+	error += clSetKernelArg(kernel, 2, sizeof(cl_mem), C->getDeviceData());
+
+	//launch kernel
+	size_t global_item_size = LIST_SIZE; // Process the entire lists
+	size_t local_item_size = 64;
+	if (error != CL_SUCCESS)throw(error);
+	error =clEnqueueNDRangeKernel(queue, kernel, 1, NULL,
+		&global_item_size, &local_item_size, 0, NULL, NULL);
+}
+
+
+void test4() {
+	kernelManager::setKernelDirectory("vector_add_kernel.cl");
+	cl_int error;
+	//Data preparation
+	const int LIST_SIZE = 1024;
+	openArray* A = openArray::constant(1, LIST_SIZE, dtype::i32);
+	openArray* B = openArray::constant(2, LIST_SIZE, dtype::i32);
+	openArray* C = openArray::constant(0, LIST_SIZE, dtype::i32);
+	//An empty kernel function
+	cl_kernel kernel = kernelManager::createKernel("vector_add");
+	cl_command_queue queue = kernelManager::getQueue();
+
+	error = clSetKernelArg(kernel, 0, sizeof(cl_mem), A->getDeviceData());
+	error += clSetKernelArg(kernel, 1, sizeof(cl_mem), B->getDeviceData());
+	error += clSetKernelArg(kernel, 2, sizeof(cl_mem), C->getDeviceData());
+	//launch kernel
+	size_t global_item_size = LIST_SIZE; // Process the entire lists
+	size_t local_item_size = 64;
+	if (error != CL_SUCCESS)throw(error);
+	error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL,
+		&global_item_size, &local_item_size, 0, NULL, NULL);
 }

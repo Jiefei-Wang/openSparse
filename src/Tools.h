@@ -5,6 +5,7 @@
 #include <CL/cl.h>
 #endif
 #include <iostream>
+//#include <Rcpp.h>
 template<class T1, class T2>
 void cpyData(T1* target, T2* src, size_t n) {
 	for (size_t i = 0; i < n; i++) {
@@ -32,7 +33,7 @@ void print_partial_matrix(char* title, T *M, int nrows, int ncols, int max_row=-
 	printf("...\n");
 }
 
-
+void errorHandle(std::string errorInfo);
 
 
 

@@ -54,17 +54,18 @@ getDeviceList=function(){
 }
 getDeviceInfo=function(i){
   .C("getDeviceInfo",as.integer(i))
-  a=1
+  invisible()
 }
 getDeviceDetail=function(i){
   .C("getDeviceDetail",as.integer(i))
-  a=1
+  invisible()
 }
 getCurDevice=function(){
   .C("getCurDevice")
-  a=1
+  invisible()
 }
 setDevice=function(i){
+  .resourceManager$releaseAll()
   .C("setDevice",as.integer(i))
-  a=1
+  invisible()
 }
