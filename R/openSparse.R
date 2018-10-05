@@ -1,7 +1,4 @@
 library(BiocGenerics)
-
-
-
 .openSparse=setClass("openSparse",
                      slot=c(file="character",fileDescription="list",data="vector",rowInd="vector",colInd="vector",
                             colDiff="vector",rowNum="numeric",colNum="numeric",size="vector"))
@@ -11,7 +8,7 @@ openSparse<-function(file){
   fileData=h5ls(file)
   rowNum=as.integer(fileData$dim[which(fileData$name=="genes")])
   colNum=as.integer(fileData$dim[which(fileData$name=="barcodes")])
-  colInd=h5read(fl, "mm10/indptr", bit64conversion="double")
+  colInd=h5read(file, "mm10/indptr", bit64conversion="double")
   rowInd.len=as.double(fileData$dim[which(fileData$name=="indices")])
   colInd.len=length(colInd)
   colDiff=diff(colInd)
@@ -31,7 +28,7 @@ setMethod(f="rowSums",signature=signature(x="openSparse"),
             repeat{
               gc()
               repeat{
-                if(x@colInd[i2]-x@colInd[i1]>chunkSize||i2==length(x@colInd))
+                if(x@colInd[i2]-x@colInd[i1]>.parms$getChunkSize()||i2==length(x@colInd))
                   break
                 i2=i2+1
               }

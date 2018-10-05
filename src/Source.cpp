@@ -74,24 +74,73 @@ void colSum(double* colResult, void** address) {
 	//	 data->getLength(1);
 	size_t workNum = data->getLength(2) - 1;
 	size_t localNum = 1;
-	clEnqueueNDRangeKernel(af_queue, kernel, 1, NULL, &workNum, &localNum, 0, NULL, NULL);
+	error+=clEnqueueNDRangeKernel(af_queue, kernel, 1, NULL, &workNum, &localNum, 0, NULL, NULL);
 
 	cpyData(colResult, (float*)result->getHostData(), length);
 	delete result;
 	//af_print(result);
 }
 
+extern "C" LibExport
+void getDeviceList() {
+	kernelManager::getAllDeviceName();
+}
+extern "C" LibExport
+void getDeviceInfo(int * i) {
+	kernelManager::getDeviceInfo( *i);
+}
+extern "C" LibExport
+void getDeviceDetail(int * i) {
+	kernelManager::getDeviceFullInfo(*i);
+}
+extern "C" LibExport
+void setDevice(int * i) {
+	kernelManager::setDevice(*i);
+}
+
+extern "C" LibExport
+void getCurDevice() {
+	kernelManager::getCurDevice();
+}
+
+extern "C" LibExport
+void debug() {
+	std::cout << kernelManager::programTable.size() << std::endl;
+	std::cout << kernelManager::kernelTable.size() << std::endl;
+}
+
 void test1();
 void test2();
 int main(void) {
+	kernelManager::setDevice(1);
 	test2();
-	
+	kernelManager::setDevice(2);
+	cl_device_id* id = new cl_device_id[1];
+	size_t size = 0;
+	cl_int error = clGetContextInfo(kernelManager::context, CL_CONTEXT_DEVICES, NULL, NULL, &size);
+	 error=clGetContextInfo(kernelManager::context, CL_CONTEXT_DEVICES, size, id,NULL);
+	if (*id != kernelManager::device_id) std::cout << "not match" << std::endl;
+	char buffer[1024];
+	cl_device_id device = *id;
+	if (device == NULL) throw("The selected device is not found!");
+	(clGetDeviceInfo(device, CL_DEVICE_VENDOR, sizeof(buffer), buffer, NULL));
+	printf("Platform name: %s\n", buffer);
+	(clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(buffer), buffer, NULL));
+	printf("Device name: %s\n", buffer);
+	(clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, sizeof(buffer), buffer, NULL));
+	printf("Opencl version: %s\n", buffer);
+	cl_ulong global_mem_size;
+	(clGetDeviceInfo(device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(global_mem_size), &global_mem_size, NULL));
+	printf("Device memory size: %lu MB\n", global_mem_size / 1048576);
+
+	test2();
+	debug();
 	//kernelManager::getAllDeviceName();
 	//kernelManager::getPlatformsInfo();
 	//kernelManager::showDeviceInfo();
 	
 	//std::cout<< afcl::get
-	//kernelManager::getDeviceFullInfo(0);
+	//kernelManager::getDeviceInfo(1);
 }
 
 void test1() {
@@ -103,7 +152,8 @@ void test1() {
 }
 
 void test2() {
-	kernelManager::setKernelDirectory("C:/Users/Jeff/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
+	//kernelManager::setKernelDirectory("C:/Users/Jeff/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
+	kernelManager::setKernelDirectory("C:/Users/wangj/OneDrive/course material/work/Roswell park/openSparse/src/kernel.cl");
 #include "read_test_data"
 	void** address = new void*;
 	double offset = 0;
@@ -128,4 +178,5 @@ void test2() {
 	rowSum(colres, address);
 	print_partial_matrix("rowSum: ", rowsum, 1, 10);
 	print_partial_matrix("rowSum: ", rowres, 1, 10);
+	clear(address);
 }

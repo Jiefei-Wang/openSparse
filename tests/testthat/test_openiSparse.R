@@ -1,6 +1,5 @@
 
 test_that("Matrix upload and download",{
-  dyn.load(.parms$getLib())
   k=100
   test.data=sparseData(row=k,col=k,nonzero=k*k/2)
   myopencl=openiSpase(test.data$dataframe,test.data$rowind,test.data$colind,test.data$rowNum,test.data$colNum)
@@ -13,12 +12,10 @@ test_that("Matrix upload and download",{
   expect_equal(myopencl@rowInd,test.data$rowind)
   expect_equal(myopencl@colInd,test.data$colind)
   delete(myopencl)
-  dyn.unload(.parms$getLib())
 })
 
 
 test_that("Matrix sum",{
-  dyn.load(.parms$getLib())
   k=100
   test.data=sparseData(row=k,col=k,nonzero=k*k/2)
   myopencl=openiSpase(test.data$dataframe,test.data$rowind,test.data$colind,test.data$rowNum,test.data$colNum)
@@ -27,7 +24,7 @@ test_that("Matrix sum",{
   row_result=rowSums(myopencl)
   expect_equal(col_result,base::colSums(test.data$dataMatrix))
   expect_equal(row_result,base::rowSums(test.data$dataMatrix))
-  dyn.unload(.parms$getLib())
+  delete(myopencl)
 })
 
 
