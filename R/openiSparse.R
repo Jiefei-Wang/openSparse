@@ -82,7 +82,7 @@ setMethod(
   })
 
 
-setGeneric(name="rowSums")
+#setGeneric(name="rowSums")
 
 #' @export
 setMethod(
@@ -92,7 +92,7 @@ setMethod(
     rowSumsOP(x,"")
   })
 
-setGeneric(name="colSums")
+#setGeneric(name="colSums")
 
 #' @export
 setMethod(
